@@ -31,7 +31,7 @@ static void orient_refresh(void) {
         for (UIScene *s in UIApplication.sharedApplication.connectedScenes)
             if ([s isKindOfClass:UIWindowScene.class]) {
                 UIInterfaceOrientation o = ((UIWindowScene *)s).effectiveGeometry.interfaceOrientation;
-                if (o == UIInterfaceOrientationLandscapeLeft || o == UIInterfaceOrientationLandscapeRight) atomic_store(&g_orient, (int)o);
+                if (o != UIInterfaceOrientationUnknown) atomic_store(&g_orient, (int)o);
                 break;
             }
     });
@@ -78,7 +78,10 @@ int s2a_phone_motion_read(s2a_pad_motion *out) {
     double acc[3] = {dm.gravity.x + dm.userAcceleration.x, dm.gravity.y + dm.userAcceleration.y, dm.gravity.z + dm.userAcceleration.z};
     double gyr[3] = {dm.rotationRate.x, dm.rotationRate.y, dm.rotationRate.z};
     float a[3], g[3];
-    s2a_phone_axes(atomic_load(&g_orient) == (int)UIInterfaceOrientationLandscapeRight, acc, gyr, a, g);
+    int o=atomic_load(&g_orient);
+    int axes=o==UIInterfaceOrientationPortrait ? S2A_PHONE_PORTRAIT : o==UIInterfaceOrientationPortraitUpsideDown ? S2A_PHONE_PORTRAIT_UPSIDE_DOWN :
+             o==UIInterfaceOrientationLandscapeRight ? S2A_PHONE_LANDSCAPE_RIGHT : S2A_PHONE_LANDSCAPE_LEFT;
+    s2a_phone_axes(axes, acc, gyr, a, g);
     *out = (s2a_pad_motion){ (uint64_t)(dm.timestamp * 1e6), a[0], a[1], a[2], g[0], g[1], g[2] };
     return 1;
 }

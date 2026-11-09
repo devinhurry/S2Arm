@@ -29,7 +29,11 @@ int main(void) {
     // ⑧ 重力和用户加速度相加：重力 (0, −1, 0) 加用户 (0.25, 0, 0.5) → 取反 (−0.25, +1, −0.5)；角速度 (1, −2, 0.5) rad/s 换成度/秒
     { double gravity[3] = {0, -1, 0}, user[3] = {0.25, 0, 0.5}, rotation[3] = {1, -2, 0.5}; s2a_gc_motion_axes(gravity, user, rotation, a, g);
       near3("⑧ 手柄 加速度合成", a, -0.25, 1, -0.5); near3("⑧ 手柄 角速度换算", g, deg, -2 * deg, 0.5 * deg); }
+    // ⑨–⑪ 竖屏：机身右 / 上就是画面右 / 上；倒持同时反转 x / y，z 不变。
+    { double acc[3] = {0, -1, 0}; s2a_phone_axes(2, acc, zero, a, g); near3("⑨ 竖屏直立 加速度", a, 0, 1, 0); }
+    { double acc[3] = {0, 1, 0}; s2a_phone_axes(3, acc, zero, a, g); near3("⑩ 倒竖屏 加速度", a, 0, 1, 0); }
+    { double gyr[3] = {1, 0, 0}; s2a_phone_axes(2, zero, gyr, a, g); near3("⑪ 竖屏绕右轴 角速度", g, deg, 0, 0); }
     if (bad) { printf("✗ t_phone_axes：%d 处不符\n", bad); return 1; }
-    printf("✓ t_phone_axes：8 项手算姿态全符（横屏左右、平放对齐 NS2 真报文、方向盘、俯仰、手柄 GCMotion）\n");
+    printf("✓ t_phone_axes：11 项手算姿态全符（横屏左右、竖屏正反、平放、方向盘、俯仰、手柄 GCMotion）\n");
     return 0;
 }
