@@ -234,6 +234,7 @@ static int fb_readback(void) { static int v = -1; if (v < 0) { const char *e = g
 #if TARGET_OS_IPHONE
 UIView *s2a_ios_root_view(void) __attribute__((weak_import));
 CGRect s2a_ios_game_area(void) __attribute__((weak_import));
+void s2a_ios_attach_game_layer(UIView *root, CALayer *game) __attribute__((weak_import));
 int s2a_screen_w(void); int s2a_screen_h(void); int s2a_widen_game(void); int s2a_widen_full(void); int s2a_screen_reaspect(void);   // runtime/src/widen.c
 int s2a_nvn_reaspect_ok(void);   // graphics/nvn/widen_glue.inc：NVN 直连的宽屏核心在跑（能运行中换屏；Vulkan / GL 层的贴图建时定宽，换不了）
 static int out_wide(void) {   // 出的是宽图：第二层，或直连第三层整套放宽（屏幕比 16:9 宽时核心才放宽，s2a_widen_init 回 OFF 时出的仍是 16:9）
@@ -304,7 +305,8 @@ void *front_metal_layer(void) {
             layout_layer(v, l);
             // 挂在最底层（11-02）：原先 addSublayer 压在根视图所有子视图之上，加载页 / 提示页（没设 zPosition）全被黑色出图层盖住——
             //   怪猎测试设备1 冷首启预热 64 秒，屏上只有手柄（手柄与开发浮层靠 zPosition 压过它），玩家对着黑屏点中了看不见的「先开始玩」
-            [v.layer insertSublayer:l atIndex:0];
+            if (s2a_ios_attach_game_layer) s2a_ios_attach_game_layer(v,l);
+            else [v.layer insertSublayer:l atIndex:0];
             g_layer = l;
         };
         if (NSThread.isMainThread) mk(); else dispatch_sync(dispatch_get_main_queue(), mk);
