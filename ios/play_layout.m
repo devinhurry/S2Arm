@@ -8,13 +8,23 @@ static _Atomic int g_split_active;
 void S2APlayPublishSplit(BOOL split) { atomic_store(&g_split_active,split ? 1 : 0); }
 int s2a_ios_split_active(void) { return atomic_load(&g_split_active); }
 
-NSString *const S2APlaySplitKey=@"S2ASplitScreen", *const S2APlayOrientationKey=@"S2AScreenOrientation", *const S2APlayLayoutChanged=@"S2APlayLayoutChanged";
+NSString *const S2APlaySplitKey=@"splitScreen", *const S2APlayOrientationKey=@"screenOrientation", *const S2APlayLayoutChanged=@"S2APlayLayoutChanged";
+// app scope 沿用共享表 padFace 的存法：NSUserDefaults 的键就是表 id。
+// 生产入口不注册这两项缺省，未保存时 objectForKey 为 nil；缺省由读取逻辑返回。
+// 此约束下旧键只在规范键不存在时迁移，随后删除。
+static NSString *play_choice(NSUserDefaults *d, NSString *key, NSString *legacy, NSArray<NSString *> *values) {
+    id value=[d objectForKey:key], old=[d objectForKey:legacy];
+    if (!value && [values containsObject:old]) { value=old; [d setObject:value forKey:key]; }
+    if (old) [d removeObjectForKey:legacy];
+    if (value && ![values containsObject:value]) { [d removeObjectForKey:key]; value=nil; }
+    return value ?: @"auto";
+}
 S2APlaySplitMode S2APlayReadSplit(NSUserDefaults *d) {
-    id v=[d objectForKey:S2APlaySplitKey];
+    NSString *v=play_choice(d,S2APlaySplitKey,@"S2ASplitScreen",@[@"auto",@"on",@"off"]);
     return [v isEqual:@"on"] ? S2APlaySplitOn : [v isEqual:@"off"] ? S2APlaySplitOff : S2APlaySplitAuto;
 }
 S2APlayOrientation S2APlayReadOrientation(NSUserDefaults *d) {
-    id v=[d objectForKey:S2APlayOrientationKey];
+    NSString *v=play_choice(d,S2APlayOrientationKey,@"S2AScreenOrientation",@[@"auto",@"landscape",@"portrait"]);
     return [v isEqual:@"portrait"] ? S2APlayOrientationPortrait : [v isEqual:@"landscape"] ? S2APlayOrientationLandscape : S2APlayOrientationAuto;
 }
 BOOL S2APlaySplitEnabled(S2APlaySplitMode mode, BOOL partiallyOpen) { return mode==S2APlaySplitOn || (mode==S2APlaySplitAuto && partiallyOpen); }
